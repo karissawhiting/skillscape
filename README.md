@@ -7,15 +7,15 @@ Skills, commands and agents that your instruction files name get a **★ referen
 ## Install
 
 ``` sh
-uv tool install git+https://github.com/<you>/skillscape
+uv tool install git+https://github.com/karissawhiting/skillscape
 # or
-pipx install git+https://github.com/<you>/skillscape
+pipx install git+https://github.com/karissawhiting/skillscape
 ```
 
 To try it once without installing:
 
 ``` sh
-uvx --from git+https://github.com/<you>/skillscape skillscape
+uvx --from git+https://github.com/karissawhiting/skillscape skillscape
 ```
 
 To upgrade, run `uv tool upgrade skillscape`. You need Python 3.9 or later. It uses only the standard library.
