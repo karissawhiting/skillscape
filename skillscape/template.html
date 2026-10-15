@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skillscape</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
+    --border: #e2e2e0; --accent: #c2661c; --accent-bg: #fbefe4;
+    --chip: #ececea; --code: #f1f1ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161617; --panel: #1f1f21; --text: #ececec; --muted: #9a9aa0;
+      --border: #333336; --accent: #f0a05a; --accent-bg: #3a2a1c;
+      --chip: #2c2c2f; --code: #262628;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { padding: 20px 24px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+  h1 { margin: 0; font-size: 20px; }
+  .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .counts { margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+  .counts b { font-variant-numeric: tabular-nums; }
+  .controls { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  input[type=search] { flex: 1; min-width: 200px; max-width: 420px; padding: 6px 10px;
+         border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+  label { font-size: 13px; color: var(--muted); cursor: pointer; }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+         gap: 20px; padding: 20px 24px; align-items: start; }
+  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+               color: var(--muted); margin: 0 0 8px; }
+  section h3 { font-size: 12px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
+  details { background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+            margin-bottom: 6px; }
+  details.mentioned { border-left: 3px solid var(--accent); }
+  summary { padding: 8px 10px; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; color: var(--muted); display: inline-block; width: 14px; }
+  details[open] > summary::before { content: "▾"; }
+  .name { font-weight: 600; }
+  .chip { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--chip);
+          color: var(--muted); margin-left: 6px; }
+  .star { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--accent-bg);
+          color: var(--accent); margin-left: 6px; font-weight: 600; }
+  .desc { color: var(--muted); font-size: 12.5px; margin: 2px 0 0 14px;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .body { padding: 0 12px 12px; border-top: 1px solid var(--border); }
+  .path { font: 11.5px ui-monospace, Menlo, monospace; color: var(--muted); margin: 8px 0; word-break: break-all; }
+  .refs { background: var(--accent-bg); border-radius: 6px; padding: 6px 10px; margin: 8px 0; font-size: 12px; }
+  .refs div { font-family: ui-monospace, Menlo, monospace; word-break: break-word; }
+  .md { font-size: 13px; overflow-wrap: anywhere; }
+  .md h1, .md h2, .md h3, .md h4 { font-size: 14px; margin: 12px 0 4px; }
+  .md pre { background: var(--code); padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+  .md code { background: var(--code); padding: 0 3px; border-radius: 3px; font-size: 12px; }
+  .md pre code { background: none; padding: 0; }
+  .md ul { padding-left: 20px; margin: 4px 0; }
+  .md p { margin: 6px 0; }
+  .empty, .note { color: var(--muted); font-size: 12.5px; font-style: italic; }
+  .hidden { display: none; }
+  @media (max-width: 600px) { header, main { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>skillscape</h1>
+  <div class="meta" id="meta"></div>
+  <div class="counts" id="counts"></div>
+  <div class="controls">
+    <input type="search" id="filter" placeholder="Filter by name, description, or text…">
+    <label><input type="checkbox" id="onlyMentioned"> ★ referenced in instructions only</label>
+    <label><input type="checkbox" id="expandAll"> expand all</label>
+  </div>
+</header>
+<main id="main"></main>
+<script id="data" type="application/json">{{DATA}}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("data").textContent);
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// Minimal markdown: fences, headings, lists, inline code/bold/italic/links.
+function md(src) {
+  const out = [], lines = src.split("\n");
+  let inCode = false, code = [], inList = false;
+  const inline = t => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|\W)\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+  const closeList = () => { if (inList) { out.push("</ul>"); inList = false; } };
+  for (const line of lines) {
+    if (/^\s*```/.test(line)) {
+      if (inCode) { out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>"); code = []; }
+      else closeList();
+      inCode = !inCode; continue;
+    }
+    if (inCode) { code.push(line); continue; }
+    let m;
+    if ((m = line.match(/^(#{1,6})\s+(.*)/))) { closeList(); out.push(`<h${Math.min(m[1].length + 1, 4)}>${inline(m[2])}</h${Math.min(m[1].length + 1, 4)}>`); }
+    else if ((m = line.match(/^\s*(?:[-*+]|\d+\.)\s+(.*)/))) { if (!inList) { out.push("<ul>"); inList = true; } out.push("<li>" + inline(m[1]) + "</li>"); }
+    else if (!line.trim()) { closeList(); }
+    else { closeList(); out.push("<p>" + inline(line) + "</p>"); }
+  }
+  if (inCode) out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>");
+  closeList();
+  return out.join("\n");
+}
+
+function card(it) {
+  const d = document.createElement("details");
+  const mentioned = it.mentions && it.mentions.length;
+  if (mentioned) d.classList.add("mentioned");
+  d.dataset.search = [it.full_name || it.name, it.description || "", it.body].join(" ").toLowerCase();
+  d.dataset.mentioned = mentioned ? "1" : "0";
+  const label = it.full_name || it.name;
+  d.innerHTML = `<summary><span class="name">${esc(label)}</span>`
+    + `<span class="chip">${esc(it.kind === "skill" || it.kind === "command" || it.kind === "agent" ? it.scope : it.kind)}</span>`
+    + (mentioned ? `<span class="star" title="Named in an instruction file">★ referenced</span>` : "")
+    + (it.description ? `<div class="desc">${esc(it.description)}</div>` : "")
+    + `</summary>`;
+  const body = document.createElement("div");
+  body.className = "body";
+  let html = `<div class="path">${esc(it.path)}</div>`;
+  if (mentioned) {
+    html += `<div class="refs"><b>Referenced in:</b>` + it.mentions.map(m =>
+      `<div>${esc(m.file)}:${m.line} — ${esc(m.text)}</div>`).join("") + `</div>`;
+  }
+  body.innerHTML = html;
+  // Render the body lazily on first open to keep large pages snappy.
+  d.addEventListener("toggle", () => {
+    if (d.open && !body.dataset.rendered) {
+      body.insertAdjacentHTML("beforeend", `<div class="md">${md(it.body || "")}</div>`);
+      body.dataset.rendered = "1";
+    }
+  });
+  d.appendChild(body);
+  return d;
+}
+
+function group(title, items, note) {
+  const wrap = document.createElement("div");
+  if (title) { const h = document.createElement("h3"); h.textContent = `${title} (${items.length})`; wrap.appendChild(h); }
+  if (!items.length) { const p = document.createElement("div"); p.className = "empty"; p.textContent = "None found."; wrap.appendChild(p); }
+  const sorted = [...items].sort((a, b) =>
+    (b.mentions?.length ? 1 : 0) - (a.mentions?.length ? 1 : 0) || (a.full_name || a.name).localeCompare(b.full_name || b.name));
+  sorted.forEach(it => wrap.appendChild(card(it)));
+  if (note) { const p = document.createElement("div"); p.className = "note"; p.textContent = note; wrap.appendChild(p); }
+  return wrap;
+}
+
+function section(title, groups) {
+  const s = document.createElement("section");
+  const h = document.createElement("h2"); h.textContent = title; s.appendChild(h);
+  groups.forEach(g => s.appendChild(g));
+  return s;
+}
+
+const byScope = (items, scope) => items.filter(i => i.scope === scope);
+const main = document.getElementById("main");
+
+// Context keeps discovery order (roughly load order).
+const ctx = document.createElement("div");
+DATA.context.forEach(it => ctx.appendChild(card(it)));
+if (!DATA.context.length) ctx.innerHTML = '<div class="empty">No context files found.</div>';
+main.appendChild(section("Context", [ctx,
+  (() => { const n = document.createElement("div"); n.className = "note";
+    n.textContent = "CLAUDE.md files in subdirectories load on demand and aren't shown."; return n; })()]));
+
+main.appendChild(section("Skills", [
+  group("Project", byScope(DATA.skills, "project")),
+  group("User", byScope(DATA.skills, "user")),
+  group("Plugin", byScope(DATA.skills, "plugin")),
+  group("Synced from claude.ai", byScope(DATA.skills, "synced"),
+    "Built-in skills (e.g. artifact-design, code-review) have no files on disk and can't be listed."),
+]));
+
+main.appendChild(section("Commands & Agents", [
+  group("Commands", DATA.commands),
+  group("Agents", DATA.agents),
+]));
+
+document.getElementById("meta").textContent = `${DATA.repo} · scanned ${DATA.generated}`;
+const nRef = DATA.skills.filter(s => s.mentions.length).length;
+document.getElementById("counts").innerHTML =
+  `<span><b>${DATA.context.length}</b> context files</span>`
+  + `<span><b>${DATA.skills.length}</b> skills</span>`
+  + `<span style="color:var(--accent)"><b>${nRef}</b> ★ referenced</span>`
+  + `<span><b>${DATA.commands.length}</b> commands</span>`
+  + `<span><b>${DATA.agents.length}</b> agents</span>`;
+
+const filterEl = document.getElementById("filter");
+const onlyEl = document.getElementById("onlyMentioned");
+function applyFilter() {
+  const q = filterEl.value.trim().toLowerCase();
+  document.querySelectorAll("main details").forEach(d => {
+    const isTool = d.closest("section").querySelector("h2").textContent !== "Context";
+    const hide = (q && !d.dataset.search.includes(q)) || (onlyEl.checked && isTool && d.dataset.mentioned !== "1");
+    d.classList.toggle("hidden", hide);
+  });
+}
+filterEl.addEventListener("input", applyFilter);
+onlyEl.addEventListener("change", applyFilter);
+document.getElementById("expandAll").addEventListener("change", e =>
+  document.querySelectorAll("main details").forEach(d => { d.open = e.target.checked; }));
+</script>
+</body>
+</html>

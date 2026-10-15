@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skillscape"
+version = "0.1.0"
+description = "Map the context and skills Claude Code sees from a repo, as one HTML page."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ email = "karissa.whiting@gmail.com" }]
+
+[project.scripts]
+skillscape = "skillscape:main"
+
+[tool.setuptools]
+packages = ["skillscape"]
+
+[tool.setuptools.package-data]
+skillscape = ["template.html"]
