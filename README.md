@@ -34,7 +34,7 @@ From a clone without installing, run `python3 -m skillscape`.
 ## What it scans
 
 - **Context:** `~/.claude/CLAUDE.md`, plus `CLAUDE.md` and `CLAUDE.local.md` in the repo root and every parent folder, `.claude/CLAUDE.md`, `@imports` (one level deep), `.claude/rules/`, and the project memory in `~/.claude/projects/<slug>/memory/`.
-- **Skills:** project skills in `.claude/skills/`, user skills in `~/.claude/skills/`, skills synced from claude.ai in `~/.claude/skills/synced/`, and skills from the plugins enabled through `enabledPlugins` in your settings.
+- **Skills:** project skills in `.claude/skills/`, user skills in `~/.claude/skills/`, skills synced from claude.ai in `~/.claude/skills/synced/`, and skills from the plugins enabled through `enabledPlugins` in your settings. A skill folder that's a symlink is grouped by the folder its link points into, so skills kept in category folders elsewhere show up in those categories. A skill nested one folder too deep is listed with a warning, because Claude Code may not load it.
 - **Commands and agents:** the user, project and plugin `commands/` and `agents/` folders.
 
 It never walks the rest of the repo. It also won't read anything under a folder whose name contains "data" or anything under `/Volumes/`. A skill in a folder like that is still listed, but its contents aren't read.

@@ -5,135 +5,419 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>skillscape</title>
 <style>
+  /* Dark, high-contrast, minimal: near-black surfaces, bright accents used sparingly. */
   :root {
-    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
-    --border: #e2e2e0; --accent: #c2661c; --accent-bg: #fbefe4;
-    --chip: #ececea; --code: #f1f1ef;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161617; --panel: #1f1f21; --text: #ececec; --muted: #9a9aa0;
-      --border: #333336; --accent: #f0a05a; --accent-bg: #3a2a1c;
-      --chip: #2c2c2f; --code: #262628;
-    }
+    color-scheme: dark;
+    --bg: #09090b; --panel: #121215; --panel-2: #0e0e11; --text: #f5f5f6; --muted: #a8a8b3;
+    --faint: #80808c; --border: #24242a; --border-strong: #42424c;
+    --star: #ff9f43; --instr: #5eb1ff; --rule: #34d399; --mem: #b794ff; --skill: #fcd34d;
+    --star-bg: color-mix(in srgb, var(--star) 10%, transparent);
+    --instr-bg: color-mix(in srgb, var(--instr) 10%, transparent);
+    --rule-bg: color-mix(in srgb, var(--rule) 10%, transparent);
+    --mem-bg: color-mix(in srgb, var(--mem) 10%, transparent);
+    --skill-bg: color-mix(in srgb, var(--skill) 10%, transparent);
+    --lvl-all: #818cf8; --lvl-inh: #a8a8b3; --lvl-repo: #4ade80; --lvl-plugin: #f472b6; --lvl-synced: #22d3ee;
+    --lvl-all-bg: color-mix(in srgb, var(--lvl-all) 12%, transparent);
+    --lvl-inh-bg: color-mix(in srgb, var(--lvl-inh) 10%, transparent);
+    --lvl-repo-bg: color-mix(in srgb, var(--lvl-repo) 10%, transparent);
+    --lvl-plugin-bg: color-mix(in srgb, var(--lvl-plugin) 10%, transparent);
+    --lvl-synced-bg: color-mix(in srgb, var(--lvl-synced) 10%, transparent);
+    --warn: #f87171;
+    --code: #1b1b20; --shadow: none;
   }
   * { box-sizing: border-box; }
+
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  header { padding: 20px 24px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
-  h1 { margin: 0; font-size: 20px; }
-  .meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .counts { margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
-  .counts b { font-variant-numeric: tabular-nums; }
-  .controls { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-  input[type=search] { flex: 1; min-width: 200px; max-width: 420px; padding: 6px 10px;
-         border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-  label { font-size: 13px; color: var(--muted); cursor: pointer; }
-  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-         gap: 20px; padding: 20px 24px; align-items: start; }
-  section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
-               color: var(--muted); margin: 0 0 8px; }
-  section h3 { font-size: 12px; color: var(--muted); margin: 14px 0 6px; font-weight: 600; }
-  details { background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-            margin-bottom: 6px; }
-  details.mentioned { border-left: 3px solid var(--accent); }
-  summary { padding: 8px 10px; cursor: pointer; list-style: none; }
+         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  a { color: inherit; }
+
+  /* Header */
+  header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--panel) 92%, transparent);
+           backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .wrap { max-width: 1680px; margin: 0 auto; padding: 0 24px; width: 100%; }
+  h1 { margin: 0; font-size: 19px; letter-spacing: -.01em; }
+  .repo { color: var(--muted); font-size: 13px; word-break: break-all; min-width: 0; }
+  header, main { overflow-wrap: anywhere; }
+  .repo .when { color: var(--faint); }
+  .bar { display: flex; gap: 8px; align-items: center; padding: 12px 0 14px; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  input[type=search] { width: 260px; max-width: 100%; padding: 6px 11px; font: inherit; font-size: 13.5px;
+         border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); }
+  input[type=search]:focus { outline: 2px solid color-mix(in srgb, var(--instr) 40%, transparent); outline-offset: 0; }
+  .toggle { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 5px;
+            cursor: pointer; user-select: none; }
+  button.ghost { font: inherit; font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--border);
+                 border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  button.ghost:hover { color: var(--text); border-color: var(--border-strong); }
+
+  /* Sections */
+  /* Dashboard: three independently scrolling panels */
+  body { display: flex; flex-direction: column; height: 100vh; }
+  header { flex-shrink: 0; }
+  #main { padding-top: 14px; padding-bottom: 14px; }  /* beats .wrap's padding shorthand */
+  main { flex: 1; min-height: 0; display: grid; gap: 14px; padding-top: 14px; padding-bottom: 14px; grid-template-rows: minmax(0, 1fr);
+         /* A collapsed panel sets its own variable to a narrow strip. */
+         grid-template-columns: var(--c-context, minmax(300px, 1fr)) var(--c-skills, minmax(380px, 1.55fr)) var(--c-tools, minmax(260px, .85fr)); }
+  /* Columns have no box of their own; the scope blocks inside them carry the structure. */
+  section.top-level { border: 1px solid transparent; border-radius: 14px;
+                      display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+  .panel-head { padding: 2px 4px 8px; }
+  .panel-head h2 { font-size: 16px; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+  .ph-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  button.fold { font: inherit; font-size: 15px; line-height: 1; color: var(--muted); background: none; cursor: pointer;
+                border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; }
+  button.fold:hover { color: var(--text); border-color: var(--border); }
+  button.fold::before { content: "«"; }
+  section.top-level.collapsed { cursor: pointer; background: var(--panel); border-color: var(--border); }
+  section.top-level.collapsed:hover { border-color: var(--border-strong); }
+  section.top-level.collapsed .panel-body, section.top-level.collapsed .lede { display: none; }
+  section.top-level.collapsed .panel-head { flex: 1; border-bottom: 0; padding: 10px 0; }
+  section.top-level.collapsed .ph-row { flex-direction: column-reverse; justify-content: flex-end; gap: 12px; }
+  section.top-level.collapsed h2 { writing-mode: vertical-rl; }
+  section.top-level.collapsed button.fold::before { content: "»"; }
+  .panel-head h2 .count { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .lede { color: var(--muted); margin: 2px 0 0; font-size: 12.5px; }
+  .lede[hidden] { display: none; }
+  /* Info icon beside a panel title; hover for the description, click to pin it open */
+  button.info { display: inline-grid; place-items: center; align-self: center; padding: 2px; border: 0; border-radius: 50%;
+                background: none; color: var(--faint); cursor: pointer; }
+  button.info:hover, button.info[aria-expanded="true"] { color: var(--text); }
+  button.info:focus-visible { outline: 2px solid var(--instr); outline-offset: 1px; }
+  section.top-level.collapsed button.info { display: none; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 0 2px 16px; scroll-padding-top: 12px; }
+  .panel-body > :first-child { margin-top: 4px; }
+  /* Every group (rules, auto memory, skill folders, memory types, commands) gets a neutral heading bar
+     with the fold arrow on the right */
+  .group { margin: 18px 0 6px; }
+  .group-head { display: flex; align-items: center; gap: 4px 8px; margin-bottom: 8px; flex-wrap: wrap;
+                padding: 6px 10px; border-radius: 7px; background: var(--code); }
+  .group-head:hover { background: color-mix(in srgb, var(--code) 70%, var(--border-strong)); }
+  .group-head h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: .01em; white-space: nowrap; }
+  .group-head .count { font-size: 12px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums;
+                       background: var(--panel); border-radius: 999px; padding: 0 7px; }
+  .group-head .hint { font-size: 12.5px; color: var(--faint); }
+  .group > .group-head .tw { order: 99; margin-left: auto; width: auto; color: var(--t, var(--muted)); }
+  /* Subgroups inside another group (memory types under Auto memory) are indented to show the nesting */
+  .group .group.minor { margin-left: 14px; }
+
+  /* Scope tiers: User → Parent folders → Project, drawn as a tree rail */
+  .tier { margin: 16px 0 4px; --t: var(--lvl-inh); --t-bg: var(--lvl-inh-bg); }
+  .tier.all { --t: var(--lvl-all); --t-bg: var(--lvl-all-bg); }
+  .tier.repo { --t: var(--lvl-repo); --t-bg: var(--lvl-repo-bg); }
+  .tier.plugin { --t: var(--lvl-plugin); --t-bg: var(--lvl-plugin-bg); }
+  .tier.synced { --t: var(--lvl-synced); --t-bg: var(--lvl-synced-bg); }
+  /* Each scope is its own bordered block, with a header bar on top */
+  .tier { background: var(--panel-2); border: 1px solid var(--border); border-left: 4px solid var(--t);
+          border-radius: 10px; overflow: hidden; }
+  /* Header bar is tinted in the scope's colour so it matches the left rail */
+  .tier-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; padding: 10px 14px;
+               background: var(--t-bg); border-bottom: 1px solid color-mix(in srgb, var(--t) 25%, transparent); }
+  .tier.closed > .tier-head { border-bottom: 0; }
+  .tier > .tier-head:focus-visible { outline-offset: -2px; }  /* .tier clips anything outside */
+  /* Fold control sits on the right of the header bar, and the whole bar highlights on hover */
+  .tier > .tier-head:hover { background: color-mix(in srgb, var(--t-bg) 75%, var(--t)); }
+  .tier > .tier-head .tw { order: 99; margin-left: auto; width: auto; color: var(--t); }
+  .tier > .tier-head:hover .tw { color: var(--text); }
+  .tier-head .t { font-size: 16px; font-weight: 750; color: var(--t); letter-spacing: -.01em; }
+  .tier-head .h { font-size: 12.5px; color: var(--muted); }
+  .tier-body { padding: 2px 12px 12px; }
+  .tier-body > .group:first-child, .tier-body > .stack:first-child { margin-top: 10px; }
+
+  /* Foldable tier and group headings */
+  .foldable { cursor: pointer; user-select: none; }
+  .foldable:focus-visible { outline: 2px solid color-mix(in srgb, var(--instr) 50%, transparent); outline-offset: 2px; border-radius: 6px; }
+  /* Every fold arrow (tiers, groups, cards) shares one size and the same small triangle */
+  /* Every fold arrow (tiers, groups, cards) is the same 16px chevron, pointing down when open */
+  .foldable .tw, .chev { display: inline-grid; place-items: center; width: 16px; height: 16px; line-height: 0; }
+  .foldable .tw { color: var(--muted); transition: transform .15s; }
+  .closed > .foldable .tw { transform: rotate(-90deg); }
+  .tier.closed > .tier-body, .group.closed > :not(.group-head) { display: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  hr.split { border: 0; border-top: 1px solid var(--border); margin: 12px 4px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 10px 14px; border: 1px dashed var(--border);
+           border-radius: 10px; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 8px; }
+
+  /* Cards */
+  details.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+                 box-shadow: var(--shadow); position: relative; min-width: 0; }
+  details.card:hover { border-color: var(--border-strong); }
+  details.card[open] { grid-column: 1 / -1; }
+  details.card::before { content: ""; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px;
+                         border-radius: 3px; background: var(--accent, transparent); }
+  details.card.star { --accent: var(--star); }
+  summary { list-style: none; cursor: pointer; padding: 11px 36px 11px 16px; position: relative; }
   summary::-webkit-details-marker { display: none; }
-  summary::before { content: "▸"; color: var(--muted); display: inline-block; width: 14px; }
-  details[open] > summary::before { content: "▾"; }
-  .name { font-weight: 600; }
-  .chip { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--chip);
-          color: var(--muted); margin-left: 6px; }
-  .star { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: var(--accent-bg);
-          color: var(--accent); margin-left: 6px; font-weight: 600; }
-  .desc { color: var(--muted); font-size: 12.5px; margin: 2px 0 0 14px;
+  .title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .name { font-weight: 620; font-size: 14.5px; word-break: break-word; }
+  .chev { color: var(--muted); transition: transform .15s; position: absolute; right: 11px; top: 12px; }
+  .prefix { color: var(--faint); font-weight: 500; }
+  details:not([open]) .chev { transform: rotate(-90deg); }
+  .chip { font-size: 11.5px; line-height: 1.5; padding: 0 7px; border-radius: 999px; white-space: nowrap; font-weight: 600;
+          color: var(--chip-fg, var(--muted)); background: var(--chip-bg, transparent);
+          border: 1px solid color-mix(in srgb, var(--chip-fg, var(--muted)) 45%, transparent); }
+  .chip.instr { --chip-bg: var(--instr-bg); --chip-fg: var(--instr); }
+  .chip.rule { --chip-bg: var(--rule-bg); --chip-fg: var(--rule); }
+  .chip.mem { --chip-bg: var(--mem-bg); --chip-fg: var(--mem); }
+  .chip.skill { --chip-bg: var(--skill-bg); --chip-fg: var(--skill); }
+  .chip.star { --chip-bg: var(--star-bg); --chip-fg: var(--star); }
+  /* Source icon on a skill card, tinted like its scope tier */
+  .src { display: inline-grid; place-items: center; flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px;
+         color: var(--s); background: color-mix(in srgb, var(--s) 15%, transparent); vertical-align: middle; }
+  summary > .corner { position: absolute; right: 9px; bottom: 9px; display: flex; gap: 4px; }
+  summary:has(> .corner) { min-height: 62px; }  /* room below the chevron for the icon */
+  /* Plugin update status next to the name: a bare coloured icon */
+  .stat { display: inline-grid; place-items: center; flex-shrink: 0; padding: 1px; color: var(--s); cursor: help; }
+  .stat svg { width: 15px; height: 15px; stroke-width: 2.6; }
+  .stat.behind { --s: var(--skill); }
+  .stat.synced { --s: var(--rule); }
+  a.src { text-decoration: none; cursor: pointer; }
+  a.src:hover { background: color-mix(in srgb, var(--s) 32%, transparent); }
+  a.src:focus-visible { outline: 2px solid var(--s); outline-offset: 1px; }
+  .chip.warn { --chip-bg: color-mix(in srgb, var(--warn) 12%, transparent); --chip-fg: var(--warn); }
+  /* Plugin provenance line in a card's body */
+  .prov { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  .prov a { color: var(--lvl-plugin); }
+  .prov .ok { color: var(--rule); }
+  .prov .up { color: var(--skill); font-weight: 600; }
+  .prov .unk { color: var(--faint); }
+  .legend .src { width: 16px; height: 16px; border-radius: 4px; }
+  .src.repo { --s: var(--lvl-repo); }
+  .src.all { --s: var(--lvl-all); }
+  .src.plugin { --s: var(--lvl-plugin); }
+  .src.synced { --s: var(--lvl-synced); }
+  .desc { color: color-mix(in srgb, var(--muted) 55%, var(--faint)); font-size: 12.5px; margin-top: 4px;
           display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .body { padding: 0 12px 12px; border-top: 1px solid var(--border); }
-  .path { font: 11.5px ui-monospace, Menlo, monospace; color: var(--muted); margin: 8px 0; word-break: break-all; }
-  .refs { background: var(--accent-bg); border-radius: 6px; padding: 6px 10px; margin: 8px 0; font-size: 12px; }
-  .refs div { font-family: ui-monospace, Menlo, monospace; word-break: break-word; }
-  .md { font-size: 13px; overflow-wrap: anywhere; }
-  .md h1, .md h2, .md h3, .md h4 { font-size: 14px; margin: 12px 0 4px; }
-  .md pre { background: var(--code); padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
-  .md code { background: var(--code); padding: 0 3px; border-radius: 3px; font-size: 12px; }
+  details[open] .desc { -webkit-line-clamp: unset; display: block; }
+  .sub { color: var(--faint); font-size: 12.5px; margin-top: 4px; word-break: break-all; }
+  .body { padding: 2px 16px 16px; border-top: 1px solid var(--border); background: var(--panel-2);
+          border-radius: 0 0 10px 10px; }
+  /* Folder icon with an eye inside that reveals the full path */
+  .fp { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; vertical-align: middle; }
+  .fp .full { display: none; }
+  .fp.open .full { display: inline; padding: 1px 7px; border-radius: 5px; background: var(--code);
+                   font-size: 12px; line-height: 1.6; word-break: normal; overflow-wrap: anywhere; }
+  .fp .full .dir, .fp .full .sep { color: var(--faint); }
+  .fp .full .sep { margin: 0 1px; }
+  .fp .full .name { color: var(--text); font-weight: 600; }
+  .fp .full .arrow { color: var(--muted); }
+  .linkmark { display: inline-grid; place-items: center; flex-shrink: 0; padding: 2px; color: var(--muted); cursor: help; }
+  button.eye { display: inline-grid; place-items: center; flex-shrink: 0; padding: 2px; border: 0; border-radius: 4px;
+               background: none; color: var(--faint); cursor: pointer; }
+  button.eye:hover, .fp.open button.eye { color: var(--text); }
+  button.eye:focus-visible { outline: 2px solid var(--instr); outline-offset: 1px; }
+  /* Colour key for the chips in a panel */
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 0; padding: 7px 10px; font-size: 12px;
+            color: var(--muted); border: 1px solid var(--border); border-radius: 8px; }
+  .legend .key { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend .key i { width: 8px; height: 8px; border-radius: 50%; background: var(--k); }
+  section.top-level.collapsed .legend { display: none; }
+  .refs { margin-top: 12px; border-radius: 8px; padding: 8px 12px; background: var(--star-bg); font-size: 13px;
+          border: 1px solid color-mix(in srgb, var(--star) 30%, transparent); }
+  .refs b { color: var(--star); }
+  .refs .ref { margin-top: 4px; word-break: break-word; }
+  .refs .loc { font-size: 12px; color: var(--muted); }
+
+  /* Instruction file with its @imports nested underneath */
+  .children { margin: 8px 0 0 22px; display: flex; flex-direction: column; gap: 8px; }
+  .children .card { border-style: dashed; }
+
+  /* Referenced summary */
+  .refstrip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 14px;
+              border: 1px solid color-mix(in srgb, var(--star) 30%, transparent); border-radius: 10px; margin-bottom: 4px; font-size: 13px; }
+  .refstrip a { text-decoration: none; border: 1px solid color-mix(in srgb, var(--star) 45%, transparent); border-radius: 999px; padding: 0 9px;
+                color: var(--star); font-weight: 600; font-size: 12.5px; }
+  .refstrip .lbl { color: var(--star); font-weight: 650; margin-right: 4px; }
+
+  /* Rendered markdown */
+  .md { font-size: 14px; overflow-wrap: anywhere; max-width: 80ch; margin-top: 10px; }
+  .md h2, .md h3, .md h4, .md h5 { font-size: 14.5px; margin: 16px 0 4px; }
+  .md h2 { font-size: 15.5px; }
+  .md pre { background: var(--code); padding: 10px 12px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; }
+  .md code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--code);
+             padding: 1px 4px; border-radius: 4px; font-size: .86em; }
   .md pre code { background: none; padding: 0; }
-  .md ul { padding-left: 20px; margin: 4px 0; }
-  .md p { margin: 6px 0; }
-  .empty, .note { color: var(--muted); font-size: 12.5px; font-style: italic; }
-  .hidden { display: none; }
-  @media (max-width: 600px) { header, main { padding-left: 16px; padding-right: 16px; } }
+  .md ul { padding-left: 22px; margin: 6px 0; }
+  .md li { margin: 2px 0; }
+  .md p { margin: 8px 0; }
+  .md table { border-collapse: collapse; font-size: 13px; margin: 8px 0; display: block; overflow-x: auto; }
+  .md th, .md td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; }
+  .md hr { border: 0; border-top: 1px solid var(--border); }
+
+  .hidden { display: none !important; }
+  .notshown { color: var(--faint); font-size: 12px; margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  /* Narrower screens: stack the panels and let the page scroll. */
+  @media (max-width: 1100px) {
+    body { height: auto; display: block; }
+    main { grid-template-columns: 1fr; grid-template-rows: none; }
+    .panel-body { overflow: visible; }
+    /* Stacked panels fold vertically instead of into a strip. */
+    button.fold::before { content: "▾"; }
+    section.top-level.collapsed button.fold::before { content: "▸"; }
+    section.top-level.collapsed .panel-head { padding: 12px 16px 10px; }
+    section.top-level.collapsed .ph-row { flex-direction: row; justify-content: space-between; }
+    section.top-level.collapsed h2 { writing-mode: horizontal-tb; }
+    header { position: static; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px; }
+    .grid { grid-template-columns: 1fr; }
+    input[type=search] { width: 100%; }
+    .spacer { display: none; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>skillscape</h1>
-  <div class="meta" id="meta"></div>
-  <div class="counts" id="counts"></div>
-  <div class="controls">
-    <input type="search" id="filter" placeholder="Filter by name, description, or text…">
-    <label><input type="checkbox" id="onlyMentioned"> ★ referenced in instructions only</label>
-    <label><input type="checkbox" id="expandAll"> expand all</label>
+  <div class="wrap">
+    <div class="bar">
+      <h1>skillscape</h1>
+      <div class="repo"><span class="mono" id="repo"></span> <span class="when" id="when"></span></div>
+      <span class="spacer"></span>
+      <input type="search" id="filter" placeholder="Filter…" aria-label="Filter items">
+      <label class="toggle"><input type="checkbox" id="onlyStar"> ★ only</label>
+      <button class="ghost" id="expand" type="button">Expand all</button>
+    </div>
   </div>
 </header>
-<main id="main"></main>
+
+<main class="wrap" id="main"></main>
+
 <script id="data" type="application/json">{{DATA}}</script>
 <script>
 const DATA = JSON.parse(document.getElementById("data").textContent);
 
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 
-// Minimal markdown: fences, headings, lists, inline code/bold/italic/links.
+// A path shown as a folder icon with an eye inside; clicking it reveals the full path.
+const EYE = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M7 13.5s1.8-3 5-3 5 3 5 3-1.8 3-5 3-5-3-5-3z"/><circle cx="12" cy="13.5" r="1.1" fill="currentColor" stroke="none"/></svg>`;
+// The path is drawn as dim folders and a bright name, breaking only after a slash. SKILL.md keeps its folder bright too.
+function pathHtml(path) {
+  const parts = String(path ?? "").replace(/\/+$/, "").split("/");
+  const keep = parts.at(-1) === "SKILL.md" && parts.length > 1 ? 2 : 1;
+  const sep = `<span class="sep">/</span><wbr>`;
+  const dirs = parts.slice(0, -keep), name = parts.slice(-keep);
+  return (dirs.length ? `<span class="dir">${dirs.map(esc).join(sep)}</span>${sep}` : "") +
+    `<span class="name">${name.map(esc).join(sep)}</span>`;
+}
+// `source`, for a symlink, is where it points; it is revealed after the path.
+function fileRef(path, source) {
+  return `<span class="fp"><button type="button" class="eye" aria-pressed="false" aria-label="Show full path" title="Show full path">${EYE}</button>` +
+    `<span class="full mono" title="${esc(source ? path + " → " + source : path)}">${pathHtml(path)}` +
+    (source ? `<span class="arrow"> → </span>${pathHtml(source)}` : "") + `</span></span>`;
+}
+// Marks a symlinked item; hover shows where the link points.
+const LINK = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>`;
+const linkMark = target => `<span class="linkmark" role="img" aria-label="Symlink to ${esc(target)}" title="Symlink → ${esc(target)}">${LINK}</span>`;
+// Where a plugin item came from, when it was installed, and whether the marketplace copy is newer.
+function pluginLine(p) {
+  const at = [esc(p.market), p.commit && `@ <span class="mono">${esc(p.commit)}</span>`, p.version && `v${esc(p.version)}`].filter(Boolean).join(" ");
+  const status = {
+    current: `<span class="ok">✓ up to date</span>${p.checked ? ` with the marketplace (checked ${esc(p.checked)})` : ""}`,
+    update: `<span class="up">⬆ newer version in the marketplace</span> · update it from <span class="mono">/plugin</span>`,
+  }[p.status] || `<span class="unk">update status unknown</span>`;
+  return `<div class="prov">${at}${p.updated ? ` · installed ${esc(p.updated)}` : ""} · ${status}` +
+    (p.url ? ` · <a href="${esc(p.url)}" target="_blank" rel="noopener">source ↗</a>` : "") + `</div>`;
+}
+// Delegated, and cancelled so a click inside a card's summary doesn't also open the card.
+document.addEventListener("click", e => {
+  // A source link inside a card's summary opens in a new tab without toggling the card.
+  const a = e.target.closest("summary a.src");
+  if (a) { e.preventDefault(); window.open(a.href, "_blank", "noopener"); return; }
+  const b = e.target.closest("button.eye");
+  if (!b) return;
+  e.preventDefault();
+  const open = b.parentElement.classList.toggle("open");
+  const label = open ? "Hide full path" : "Show full path";
+  b.setAttribute("aria-pressed", String(open));
+  b.setAttribute("aria-label", label);
+  b.title = label;
+});
+
+// ---------------------------------------------------------------- markdown
 function md(src) {
   const out = [], lines = src.split("\n");
-  let inCode = false, code = [], inList = false;
+  let inCode = false, code = [], inList = false, table = [];
   const inline = t => esc(t)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
-    .replace(/(^|\W)\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
   const closeList = () => { if (inList) { out.push("</ul>"); inList = false; } };
+  const flushTable = () => {
+    if (!table.length) return;
+    const rows = table.filter(r => !/^\s*\|?\s*:?-{2,}/.test(r)).map(r =>
+      r.trim().replace(/^\||\|$/g, "").split("|").map(c => inline(c.trim())));
+    out.push("<table>" + rows.map((r, i) => "<tr>" + r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join("") + "</tr>").join("") + "</table>");
+    table = [];
+  };
   for (const line of lines) {
     if (/^\s*```/.test(line)) {
       if (inCode) { out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>"); code = []; }
-      else closeList();
+      else { closeList(); flushTable(); }
       inCode = !inCode; continue;
     }
     if (inCode) { code.push(line); continue; }
+    if (/^\s*\|.*\|\s*$/.test(line)) { closeList(); table.push(line); continue; }
+    flushTable();
     let m;
-    if ((m = line.match(/^(#{1,6})\s+(.*)/))) { closeList(); out.push(`<h${Math.min(m[1].length + 1, 4)}>${inline(m[2])}</h${Math.min(m[1].length + 1, 4)}>`); }
+    if ((m = line.match(/^(#{1,6})\s+(.*)/))) { closeList(); const h = Math.min(m[1].length + 1, 5); out.push(`<h${h}>${inline(m[2])}</h${h}>`); }
+    else if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { closeList(); out.push("<hr>"); }
     else if ((m = line.match(/^\s*(?:[-*+]|\d+\.)\s+(.*)/))) { if (!inList) { out.push("<ul>"); inList = true; } out.push("<li>" + inline(m[1]) + "</li>"); }
-    else if (!line.trim()) { closeList(); }
+    else if (!line.trim()) closeList();
     else { closeList(); out.push("<p>" + inline(line) + "</p>"); }
   }
   if (inCode) out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>");
-  closeList();
+  closeList(); flushTable();
   return out.join("\n");
 }
 
-function card(it) {
-  const d = document.createElement("details");
-  const mentioned = it.mentions && it.mentions.length;
-  if (mentioned) d.classList.add("mentioned");
-  d.dataset.search = [it.full_name || it.name, it.description || "", it.body].join(" ").toLowerCase();
-  d.dataset.mentioned = mentioned ? "1" : "0";
-  const label = it.full_name || it.name;
-  d.innerHTML = `<summary><span class="name">${esc(label)}</span>`
-    + `<span class="chip">${esc(it.kind === "skill" || it.kind === "command" || it.kind === "agent" ? it.scope : it.kind)}</span>`
-    + (mentioned ? `<span class="star" title="Named in an instruction file">★ referenced</span>` : "")
-    + (it.description ? `<div class="desc">${esc(it.description)}</div>` : "")
-    + `</summary>`;
-  const body = document.createElement("div");
-  body.className = "body";
-  let html = `<div class="path">${esc(it.path)}</div>`;
-  if (mentioned) {
-    html += `<div class="refs"><b>Referenced in:</b>` + it.mentions.map(m =>
-      `<div>${esc(m.file)}:${m.line} — ${esc(m.text)}</div>`).join("") + `</div>`;
+// ---------------------------------------------------------------- cards
+const KIND_CHIP = { instructions: "instr", import: "instr", rule: "rule", memory: "mem", "memory-index": "mem",
+                    skill: "skill", command: "skill", agent: "skill" };
+
+function card(it, opts = {}) {
+  const d = el("details", "card");
+  const starred = it.mentions && it.mentions.length > 0;
+  if (starred) d.classList.add("star");
+  d.id = "item-" + it.id.replace(/[^\w-]/g, "_");
+  d.dataset.search = [it.full_name, it.name, it.label, it.description, it.path, it.source, it.category, it.body].join(" ").toLowerCase();
+  d.dataset.star = starred ? "1" : "0";
+  d.dataset.tool = KIND_CHIP[it.kind] === "skill" ? "1" : "0";
+
+  const chips = [];
+  if (opts.chip) chips.push(`<span class="chip ${KIND_CHIP[it.kind]}">${esc(opts.chip)}</span>`);
+  if (starred) chips.push(`<span class="chip star" title="Named in an instruction file">★ referenced</span>`);
+  if (it.warn === "broken") chips.push(`<span class="chip warn" title="The link's target is missing">broken link</span>`);
+  if (it.warn === "nested") chips.push(`<span class="chip warn" title="Too deep in the skills folder to load">not loaded</span>`);
+  const sub = opts.sub ?? "";
+  d.innerHTML = `<summary>
+      <div class="title"><span class="name">${opts.titleHtml ?? esc(opts.title ?? it.full_name ?? it.name)}</span>${it.path ? fileRef(it.path, it.source) : ""}${it.source ? linkMark(it.source) : ""}${statusIcon(it)}${chips.join("")}<span class="chev" aria-hidden="true">${CHEVRON}</span></div>
+      ${it.description ? `<div class="desc">${esc(it.description)}</div>` : ""}
+      ${sub ? `<div class="sub">${sub}</div>` : ""}${opts.corner ?? ""}
+    </summary>`;
+
+  const body = el("div", "body");
+  let html = "";
+  if (it.plugin) html += pluginLine(it.plugin);
+  if (it.declared_source)
+    html += `<div class="prov">source declared in SKILL.md · <a href="${esc(it.declared_source)}" target="_blank" rel="noopener">${esc(it.declared_source)} ↗</a></div>`;
+  if (starred) {
+    html += `<div class="refs"><b>★ Referenced in instructions</b>` + it.mentions.map(m =>
+      `<div class="ref"><span class="loc">${fileRef(m.file)}<span class="mono">:${m.line}</span></span><br>${esc(m.text)}</div>`).join("") + `</div>`;
   }
   body.innerHTML = html;
-  // Render the body lazily on first open to keep large pages snappy.
+  // Render the markdown only when first opened.
   d.addEventListener("toggle", () => {
     if (d.open && !body.dataset.rendered) {
-      body.insertAdjacentHTML("beforeend", `<div class="md">${md(it.body || "")}</div>`);
+      body.insertAdjacentHTML("beforeend", it.body?.trim() ? `<div class="md">${md(it.body)}</div>`
+                                                            : `<div class="note">No contents shown.</div>`);
       body.dataset.rendered = "1";
     }
   });
@@ -141,71 +425,343 @@ function card(it) {
   return d;
 }
 
-function group(title, items, note) {
-  const wrap = document.createElement("div");
-  if (title) { const h = document.createElement("h3"); h.textContent = `${title} (${items.length})`; wrap.appendChild(h); }
-  if (!items.length) { const p = document.createElement("div"); p.className = "empty"; p.textContent = "None found."; wrap.appendChild(p); }
-  const sorted = [...items].sort((a, b) =>
-    (b.mentions?.length ? 1 : 0) - (a.mentions?.length ? 1 : 0) || (a.full_name || a.name).localeCompare(b.full_name || b.name));
-  sorted.forEach(it => wrap.appendChild(card(it)));
-  if (note) { const p = document.createElement("div"); p.className = "note"; p.textContent = note; wrap.appendChild(p); }
-  return wrap;
+// `build`, when given, lays out all the items itself instead of one `render` call per item.
+function group(title, items, { hint = "", layout = "grid", empty = "None found.", keepEmpty = true, render, build } = {}) {
+  if (!items.length && !keepEmpty) return null;
+  const g = el("div", "group");
+  const head = el("div", "group-head",
+    `<h3>${esc(title)}</h3><span class="count">${items.length}</span>${hint ? `<span class="hint">· ${esc(hint)}</span>` : ""}`);
+  foldable(g, head);
+  g.appendChild(head);
+  if (!items.length) { g.appendChild(el("div", "empty", esc(empty))); return g; }
+  if (build) { g.appendChild(build(items)); return g; }
+  const box = el("div", layout);
+  items.forEach(it => box.appendChild(render ? render(it) : card(it)));
+  g.appendChild(box);
+  return g;
 }
 
-function section(title, groups) {
-  const s = document.createElement("section");
-  const h = document.createElement("h2"); h.textContent = title; s.appendChild(h);
-  groups.forEach(g => s.appendChild(g));
+// Clicking a tier or group heading folds its contents away.
+function foldable(wrap, head) {
+  head.classList.add("foldable");
+  head.setAttribute("role", "button");
+  head.tabIndex = 0;
+  head.setAttribute("aria-expanded", "true");
+  head.insertAdjacentHTML("afterbegin", `<span class="tw" aria-hidden="true">${CHEVRON}</span>`);
+  const toggle = () => head.setAttribute("aria-expanded", String(!wrap.classList.toggle("closed")));
+  // The path icon in a header reveals the path without folding the tier.
+  const onEye = e => e.target.closest("button.eye");
+  head.addEventListener("click", e => { if (!onEye(e)) toggle(); });
+  head.addEventListener("keydown", e => { if (onEye(e)) return; if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+}
+
+const CHEVRON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
+const INFO = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>`;
+function topSection(id, title, count, lede, children) {
+  const s = el("section", "top-level");
+  s.id = id;
+  s.dataset.title = title;
+  // The description hides behind an info icon: hover shows it as a tooltip, click pins it open.
+  const plain = el("div", null, lede || "").textContent;
+  const head = el("div", "panel-head",
+    `<div class="ph-row"><h2>${esc(title)}<span class="count">${count}</span>` +
+    (lede ? `<button class="info" type="button" aria-expanded="false" aria-label="About ${esc(title)}" title="${esc(plain)}">${INFO}</button>` : "") +
+    `</h2><button class="fold" type="button" aria-expanded="true" aria-label="Collapse ${esc(title)}"></button></div>` +
+    (lede ? `<p class="lede" hidden>${lede}</p>` : ""));
+  head.querySelector(".fold").addEventListener("click", e => {
+    e.stopPropagation();
+    setPanel(s, !s.classList.contains("collapsed"));
+  });
+  const info = head.querySelector(".info");
+  if (info) info.addEventListener("click", e => {
+    e.stopPropagation();
+    const p = head.querySelector(".lede");
+    p.hidden = !p.hidden;
+    info.setAttribute("aria-expanded", String(!p.hidden));
+  });
+  // A collapsed panel is a thin strip; clicking anywhere on it opens it again.
+  s.addEventListener("click", () => { if (s.classList.contains("collapsed")) setPanel(s, false); });
+  s.appendChild(head);
+  const body = el("div", "panel-body");
+  children.filter(Boolean).forEach(c => body.appendChild(c));
+  s.appendChild(body);
   return s;
 }
 
-const byScope = (items, scope) => items.filter(i => i.scope === scope);
+function setPanel(s, collapsed) {
+  s.classList.toggle("collapsed", collapsed);
+  const b = s.querySelector(".fold");
+  b.setAttribute("aria-expanded", String(!collapsed));
+  b.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} ${s.dataset.title}`);
+  const m = document.getElementById("main").style;
+  if (collapsed) m.setProperty(`--c-${s.id}`, "44px"); else m.removeProperty(`--c-${s.id}`);
+}
+
+const starFirst = items => [...items].sort((a, b) =>
+  (b.mentions.length > 0) - (a.mentions.length > 0) || (a.full_name || a.name).localeCompare(b.full_name || b.name));
+
+// ---------------------------------------------------------------- context
+const ctx = DATA.context;
+const instructions = ctx.filter(c => c.kind === "instructions");
+const imports = ctx.filter(c => c.kind === "import");
+const rules = ctx.filter(c => c.kind === "rule");
+const memIndex = ctx.filter(c => c.kind === "memory-index");
+const memories = ctx.filter(c => c.kind === "memory");
+
+// Load order across all instruction files (1 = read first).
+
+function instrCard(it) {
+  return card(it, { title: it.label,
+    sub: `${esc(it.note)} · ${plural(it.lines, "line")}` });
+}
+
+// An instruction file with the files it @imports nested under it.
+function instrWithImports(it) {
+  const step = el("div", "step");
+  step.appendChild(instrCard(it));
+  const kids = imports.filter(x => x.imported_by === it.id);
+  if (kids.length) {
+    const c = el("div", "children");
+    kids.forEach(k => c.appendChild(card(k, { title: "↳ " + k.name, sub: `${esc(k.note)} · ${plural(k.lines, "line")}` })));
+    step.appendChild(c);
+  }
+  return step;
+}
+
+function stackOf(items, render) {
+  const s = el("div", "stack");
+  items.forEach(it => s.appendChild(render(it)));
+  return s;
+}
+
+// A scope level: coloured header plus a rail that holds its groups.
+function tier(cls, title, hint, children) {
+  children = children.filter(Boolean);
+  if (!children.length) return null;
+  const w = el("div", "tier " + cls);
+  const head = el("div", "tier-head", `<span class="t">${esc(title)}</span>${hint ? `<span class="h">${hint}</span>` : ""}`);
+  foldable(w, head);
+  w.appendChild(head);
+  const b = el("div", "tier-body");
+  children.forEach(c => b.appendChild(c));
+  w.appendChild(b);
+  return w;
+}
+
+// Tiers in load order; missing tiers drop out.
+const flow = tiers => tiers.filter(Boolean);
+
+// Imports of rules or other imports (not under an instruction file).
+const orphanImports = imports.filter(x => !instructions.some(i => i.id === x.imported_by));
+
+const MEM_ORDER = ["user", "feedback", "project", "reference"];
+function memoryGroups() {
+  const g = group("Auto memory", memIndex, { layout: "stack", hint: "Claude's notes, kept across sessions",
+    empty: memories.length ? "No MEMORY.md index. Claude finds memory files through it, so the ones below may go unused."
+                           : "No memory for this project yet.",
+    render: it => card(it, { title: "MEMORY.md", sub: `${esc(it.note)} · ${plural(it.lines, "line")}` }) });
+  g.querySelector(".count").textContent = memIndex.length + memories.length;
+  const types = [...new Set([...MEM_ORDER, ...memories.map(m => m.mem_type || "other")])];
+  types.forEach(t => {
+    const items = memories.filter(m => (m.mem_type || "other") === t);
+    if (!items.length) return;
+    const sub = group(`${t[0].toUpperCase()}${t.slice(1)}`, items, { layout: "stack",
+      render: it => card(it, { sub: `<span class="mono">${esc(it.path.split("/").pop())}</span>` }) });
+    sub.classList.add("minor");
+    g.appendChild(sub);
+  });
+  return g;
+}
+
+// ---------------------------------------------------------------- skills / tools
+const skills = DATA.skills;
+const referenced = starFirst(skills.filter(s => s.mentions.length));
+function refStrip() {
+  if (!referenced.length) return null;
+  const s = el("div", "refstrip", `<span class="lbl">★ Referenced in instructions:</span>`);
+  referenced.forEach(r => {
+    const a = el("a", null, esc(r.full_name));
+    a.href = "#item-" + r.id.replace(/[^\w-]/g, "_");
+    a.addEventListener("click", () => { const t = document.getElementById(a.hash.slice(1)); if (t) t.open = true; });
+    s.appendChild(a);
+  });
+  return s;
+}
+// Where a skill comes from, as an icon in its scope's tier colour.
+const svg = d => `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const SOURCE = {
+  project: { cls: "repo", label: "Project", icon: svg(`<path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5"/>`) },
+  user: { cls: "all", label: "User", icon: svg(`<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>`) },
+  plugin: { cls: "plugin", label: "Plugin", icon: svg(`<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/>`) },
+  synced: { cls: "synced", label: "claude.ai account", icon: svg(`<path d="M17.5 19a4.5 4.5 0 0 0 .4-9 6 6 0 0 0-11.5 1.6A3.8 3.8 0 0 0 7 19z"/>`) },
+};
+// Plugin update status next to the name.
+const STATUS = {
+  behind: { label: "Update available", icon: svg(`<path d="M12 4v14M6 12l6 6 6-6"/>`) },
+  synced: { label: "Up to date", icon: svg(`<path d="M5 12.5l4.5 4.5L19 7.5"/>`) },
+};
+function statusOf(it) {
+  const p = it.plugin;
+  if (p && p.status === "update") return ["behind", "Newer version in the marketplace; update it from /plugin"];
+  if (p && p.status === "current") return ["synced", "Up to date with the marketplace" + (p.checked ? ` (checked ${p.checked})` : "")];
+  return null;
+}
+const statusIcon = it => {
+  const s = statusOf(it);
+  return s ? `<span class="stat ${s[0]}" role="img" aria-label="${esc(s[1])}" title="${esc(s[1])}">${STATUS[s[0]].icon}</span>` : "";
+};
+// A plugin item's icon links to its source, pinned to the installed commit.
+const srcIcon = (scope, url) => {
+  const s = SOURCE[scope];
+  if (!s) return "";
+  if (url) return `<a class="src ${s.cls}" href="${esc(url)}" target="_blank" rel="noopener" aria-label="${s.label} source" title="Open source">${s.icon}</a>`;
+  return `<span class="src ${s.cls}" role="img" aria-label="${s.label}" title="${s.label}">${s.icon}</span>`;
+};
+// Show plugin/synced prefixes faintly so the skill's own name stands out.
+const skillCard = it => {
+  const [pre, name] = it.full_name && it.full_name !== it.name ? [it.full_name.slice(0, -it.name.length), it.name] : ["", it.full_name || it.name];
+  return card(it, {
+    corner: `<span class="corner">${srcIcon(it.scope, (it.plugin && it.plugin.url) || it.declared_source)}</span>`, titleHtml: (pre ? `<span class="prefix">${esc(pre)}</span>` : "") + esc(name),
+  });
+};
+const byScope = s => starFirst(skills.filter(x => x.scope === s));
+
+// ---------------------------------------------------------------- page
 const main = document.getElementById("main");
+const globalInstr = instructions.filter(i => i.scope === "user");
+const parentInstr = instructions.filter(i => i.scope === "ancestor");
+const repoInstr = instructions.filter(i => i.scope === "project");
+const ruleCard = it => card(it, { sub: esc(it.note) });
+const repoName = DATA.repo.split("/").pop();
+const repoRules = rules.filter(r => r.scope !== "user");
+// The "Project" tier is left out when the repo adds no context of its own.
+const hasRepoContext = repoInstr.length + repoRules.length + orphanImports.length + memIndex.length + memories.length > 0;
 
-// Context keeps discovery order (roughly load order).
-const ctx = document.createElement("div");
-DATA.context.forEach(it => ctx.appendChild(card(it)));
-if (!DATA.context.length) ctx.innerHTML = '<div class="empty">No context files found.</div>';
-main.appendChild(section("Context", [ctx,
-  (() => { const n = document.createElement("div"); n.className = "note";
-    n.textContent = "CLAUDE.md files in subdirectories load on demand and aren't shown."; return n; })()]));
+main.appendChild(topSection("context", "Context", ctx.length,
+  "Read at the start of every session, top to bottom; later files add to earlier ones.",
+  flow([tier("all", "User", `${fileRef("~/.claude")} applies to every project`, [
+     globalInstr.length ? stackOf(globalInstr, instrWithImports) : el("div", "empty", "No user CLAUDE.md."),
+     group("Rules", rules.filter(r => r.scope === "user"), { keepEmpty: false, layout: "stack", render: ruleCard })]),
+   tier("inh", "Parent folders", "inherited from folders above this repo",
+     parentInstr.length ? [stackOf(parentInstr, instrWithImports)] : []),
+   hasRepoContext ? tier("repo", "Project", fileRef(repoName), [
+     repoInstr.length ? stackOf(repoInstr, instrWithImports) : null,
+     group("Rules", repoRules, { keepEmpty: false, layout: "stack", render: ruleCard }),
+     group("Other imports", orphanImports, { keepEmpty: false, layout: "stack", render: it => card(it, { sub: esc(it.note) }) }),
+     memoryGroups()]) : null])));
 
-main.appendChild(section("Skills", [
-  group("Project", byScope(DATA.skills, "project")),
-  group("User", byScope(DATA.skills, "user")),
-  group("Plugin", byScope(DATA.skills, "plugin")),
-  group("Synced from claude.ai", byScope(DATA.skills, "synced"),
-    "Built-in skills (e.g. artifact-design, code-review) have no files on disk and can't be listed."),
-]));
+const gridOf = items => { const g = el("div", "grid"); items.forEach(it => g.appendChild(skillCard(it))); return g; };
+// Referenced skills come first, set off from the rest by a light rule.
+const skillGroup = (items, empty) => {
+  if (!items.length) return el("div", "empty", empty);
+  const ref = items.filter(s => s.mentions.length), rest = items.filter(s => !s.mentions.length);
+  if (!ref.length || !rest.length) return gridOf(items);
+  const box = el("div");
+  box.append(gridOf(ref), el("hr", "split"), gridOf(rest));
+  return box;
+};
 
-main.appendChild(section("Commands & Agents", [
-  group("Commands", DATA.commands),
-  group("Agents", DATA.agents),
-]));
+// Symlinked skills are grouped by the folder their link points into; real folders go last.
+const skillsBody = (items, empty) => {
+  if (!items.some(s => s.category)) return [skillGroup(items, empty)];
+  const cats = [...new Set(items.map(s => s.category || ""))]
+    .sort((a, b) => (a === "") - (b === "") || a.localeCompare(b));
+  return cats.map(c => {
+    const g = group(c || "Not linked", items.filter(s => (s.category || "") === c), { build: xs => skillGroup(xs, "") });
+    g.classList.add("minor");
+    if (c) g.classList.add("cat");
+    return g;
+  });
+};
+// Commands are the older skill format, so they sit with the skills of the same scope.
+const cmdsOf = s => starFirst(DATA.commands.filter(x => x.scope === s));
+const cmdGroup = s => {
+  const g = group("Commands", cmdsOf(s), { keepEmpty: false, hint: "older format; works like a skill", build: xs => gridOf(xs) });
+  if (g) g.classList.add("minor");
+  return g;
+};
+const scopeCount = s => byScope(s).length + cmdsOf(s).length;
+const closedTier = t => { if (t) { t.classList.add("closed"); t.querySelector(".tier-head").setAttribute("aria-expanded", "false"); } return t; };
 
-document.getElementById("meta").textContent = `${DATA.repo} · scanned ${DATA.generated}`;
-const nRef = DATA.skills.filter(s => s.mentions.length).length;
-document.getElementById("counts").innerHTML =
-  `<span><b>${DATA.context.length}</b> context files</span>`
-  + `<span><b>${DATA.skills.length}</b> skills</span>`
-  + `<span style="color:var(--accent)"><b>${nRef}</b> ★ referenced</span>`
-  + `<span><b>${DATA.commands.length}</b> commands</span>`
-  + `<span><b>${DATA.agents.length}</b> agents</span>`;
+main.appendChild(topSection("skills", "Skills", skills.length + DATA.commands.length,
+  "Loaded when a task matches the description. Click one to read it.",
+  [refStrip(),
+   scopeCount("project") ? tier("repo", "Project",
+     `${fileRef(repoName + "/.claude/skills")} · ${scopeCount("project")}`,
+     [...(byScope("project").length ? skillsBody(byScope("project"), "") : []), cmdGroup("project")]) : null,
+   tier("all", "User",
+     `${fileRef("~/.claude/skills")} · ${scopeCount("user")}`,
+     [...(byScope("user").length || !cmdsOf("user").length ? skillsBody(byScope("user"), "None.") : []), cmdGroup("user")]),
+   scopeCount("plugin") ? tier("plugin", "Plugins", `enabled plugins · ${scopeCount("plugin")}`,
+     [byScope("plugin").length ? skillGroup(byScope("plugin"), "") : null, cmdGroup("plugin")]) : null,
+   byScope("synced").length ? closedTier(tier("synced", "claude.ai account", `synced from your account · ${byScope("synced").length}`,
+     [skillGroup(byScope("synced"), "")])) : null]));
 
-const filterEl = document.getElementById("filter");
-const onlyEl = document.getElementById("onlyMentioned");
+// Subagents from one source; an empty group drops out, and tier() drops an empty tier.
+const agentsFrom = scope => [
+  group("Subagents", starFirst(DATA.agents.filter(x => x.scope === scope)), { render: skillCard, layout: "stack", keepEmpty: false })];
+const nTools = DATA.agents.length;
+
+main.appendChild(topSection("tools", "Subagents", nTools,
+  "Specialised assistants Claude can hand a task to.",
+  [nTools ? null : el("div", "empty", "No custom subagents."),
+   tier("repo", "Project", fileRef(repoName + "/.claude/agents"), agentsFrom("project")),
+   tier("all", "User", fileRef("~/.claude/agents"), agentsFrom("user")),
+   tier("plugin", "Plugins", "enabled plugins", agentsFrom("plugin")),
+   el("div", "notshown", "<b>Not shown:</b> built-in skills (e.g. artifact-design, code-review), which have no files on disk; " +
+     "CLAUDE.md files in subfolders, which load only when Claude works there; MCP servers, hooks and permissions.")]));
+
+// A colour key above each panel, listing only the chip colours that panel uses.
+const LEGEND = [["instr", "Instructions"], ["rule", "Rule"], ["mem", "Auto memory"], ["skill", null], ["star", "Referenced"]];
+const SKILL_KEY = { context: "Skill", skills: "Skill", tools: "Subagent" };
+document.querySelectorAll("section.top-level").forEach(s => {
+  const used = LEGEND.filter(([c]) => s.querySelector(`.panel-body .chip.${c}`));
+  const srcs = Object.values(SOURCE).filter(x => s.querySelector(`.panel-body .src.${x.cls}`));
+  if (!used.length && !srcs.length) return;
+  s.querySelector(".panel-head").appendChild(el("div", "legend",
+    used.map(([c, label]) => `<span class="key"><i style="--k: var(--${c})"></i>${esc(label ?? SKILL_KEY[s.id])}</span>`).join("") +
+    srcs.map(x => `<span class="key"><span class="src ${x.cls}" aria-hidden="true">${x.icon}</span>${esc(x.label)}</span>`).join("") +
+    Object.entries(STATUS).filter(([k]) => s.querySelector(`.panel-body .stat.${k}`))
+      .map(([k, x]) => `<span class="key"><span class="stat ${k}" aria-hidden="true">${x.icon}</span>${esc(x.label)}</span>`).join("")));
+});
+
+// Header
+document.getElementById("repo").innerHTML = `${esc(DATA.repo.split("/").pop())} ${fileRef(DATA.repo)}`;
+document.getElementById("when").textContent = "· scanned " + DATA.generated;
+
+// ---------------------------------------------------------------- filtering
+const filterEl = document.getElementById("filter"), starEl = document.getElementById("onlyStar");
 function applyFilter() {
   const q = filterEl.value.trim().toLowerCase();
-  document.querySelectorAll("main details").forEach(d => {
-    const isTool = d.closest("section").querySelector("h2").textContent !== "Context";
-    const hide = (q && !d.dataset.search.includes(q)) || (onlyEl.checked && isTool && d.dataset.mentioned !== "1");
+  document.querySelectorAll("details.card").forEach(d => {
+    const hide = (q && !d.dataset.search.includes(q)) || (starEl.checked && d.dataset.tool === "1" && d.dataset.star !== "1");
     d.classList.toggle("hidden", hide);
   });
+  // Hide groups and timeline steps left with nothing visible while filtering.
+  document.querySelectorAll(".group, .tier, .step").forEach(g => {
+    const cards = g.querySelectorAll("details.card");
+    g.classList.toggle("hidden", (q || starEl.checked) && cards.length > 0 && !g.querySelector("details.card:not(.hidden)"));
+  });
+  // A rule between referenced and other skills only makes sense with cards on both sides.
+  document.querySelectorAll("hr.split").forEach(h => h.classList.toggle("hidden",
+    ![h.previousElementSibling, h.nextElementSibling].every(g => g.querySelector("details.card:not(.hidden)"))));
 }
 filterEl.addEventListener("input", applyFilter);
-onlyEl.addEventListener("change", applyFilter);
-document.getElementById("expandAll").addEventListener("change", e =>
-  document.querySelectorAll("main details").forEach(d => { d.open = e.target.checked; }));
+starEl.addEventListener("change", applyFilter);
+const expandBtn = document.getElementById("expand");
+expandBtn.addEventListener("click", () => {
+  const open = expandBtn.textContent === "Expand all";
+  // Expanding also reopens any folded panels and sections, so the cards can be seen.
+  if (open) {
+    document.querySelectorAll("section.top-level.collapsed").forEach(s => setPanel(s, false));
+    document.querySelectorAll(".closed").forEach(w => {
+      w.classList.remove("closed");
+      w.querySelector(":scope > .foldable").setAttribute("aria-expanded", "true");
+    });
+  }
+  document.querySelectorAll("details.card:not(.hidden)").forEach(d => { d.open = open; });
+  expandBtn.textContent = open ? "Collapse all" : "Expand all";
+});
 </script>
 </body>
 </html>
